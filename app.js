@@ -1,7 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const _ = require("lodash");
 
 const app = express();
 
@@ -20,24 +19,52 @@ const articleSchema = {
 
 const article = mongoose.model("Article", articleSchema);
 
-app.get("/articles", function(req, res) {
-  article.find(function(err, articles) {
-    if (!err) res.send(articles);
-    else res.send(err);
-  });
-});
+app
+  .route("/articles")
+  .get(function(req, res) {
+    article.find(function(err, articles) {
+      if (!err) res.send(articles);
+      else res.send(err);
+    });
+  })
+  .post(function(req, res) {
+    const newArticle = new article({
+      title: res.body.title,
+      content: res.body.content
+    });
 
-app.post("/articles", function(req, res) {
-  const newArticle = new article({
-    title: res.body.title,
-    content: res.body.content
+    newArticle.save(function(err) {
+      if (!err) res.send("Successfully added a new article.");
+      else res.send(err);
+    });
+  })
+  .delete(function(req, res) {
+    Article.deleteMany(function(err) {
+      if (!err) res.send("Successfully deleted all articles.");
+      else res.send(err);
+    });
   });
 
-  newArticle.save(function(err) {
-    if (!err) res.send("Successfully added a new article.");
-    else res.send(err);
+app
+  .route("/articles/:articleTitle")
+  .get(function(req, res) {
+    Article.findOne({ title: req.params.articleTitle }, function(err, article) {
+      if (article) res.send(article);
+      else res.send("No articles found.");
+    });
+  })
+  .put(function(req, res) {
+    Article.update(
+      { title: req.params.articleTitle },
+      { title: req.body.title, content: req.body.content },
+      { overwrite: true },
+      function(err) {
+        if (err) {
+          res.send("Successfully updated the article.");
+        }
+      }
+    );
   });
-});
 
 app.listen(process.env.PORT || 3000, function() {
   console.log("Server is running on port 3000");
